@@ -55,3 +55,11 @@ application/libraries/REST_Controller.php  - REST控制器类
 application/libraries/Format.php - 格式化工具包
 ```
 
+
+## 多环境配置
+
+[文档参考](http://codeigniter.org.cn/user_guide/libraries/config.html#config-environments)
+
+* 新建目录 application/config/production/
+* 将已有的 config.php 文件拷贝到该目录
+* 编辑 application/config/production/config.php 文件，使用生产环境下配置
