@@ -144,9 +144,7 @@ class MY_Controller extends REST_Controller {
         $uri = $dir . $ctrl .'/'. $act;
 
         //不需要检查api-key的地址
-        $ignoreUris = array(
-            'example/book/ignore',
-        );
+        $ignoreUris = $this->config->item('rest_ignore_uris');
 
         foreach($ignoreUris as $u) {
             if($u == $uri){

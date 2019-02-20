@@ -35,3 +35,7 @@ CREATE TABLE `api_logs` (
 */
 
 $config['rest_logs_table'] = 'api_logs';
+
+$config['rest_ignore_uris'] = [
+    //'example/user/list'
+];
