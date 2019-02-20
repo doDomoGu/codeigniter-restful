@@ -68,7 +68,7 @@ class MY_Controller extends REST_Controller {
             'params' => json_encode($this->{$this->request->method}()),
             'api_key' => $this->_key ,
             'ip_address' => $this->input->ip_address(),
-            'time' => time(),
+            'time' => date('Y-m-d H:i:s'),
             'authorized' => $this->_authorized,
             'response_data' => json_encode($response),
             'response_code' => $http_code
