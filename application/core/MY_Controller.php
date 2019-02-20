@@ -8,9 +8,9 @@ class MY_Controller extends REST_Controller {
 
     public $_code = 0;
 
-    public $_data = array();
+    public $_data = null;
 
-    public $_msg = '';
+    public $_msg = null;
 
     private $_key = NULL;
 
