@@ -32,11 +32,14 @@ class MY_Controller extends REST_Controller {
 
     }
 
+    //重写 rest_controller 的 destruct
     function __destruct() {
-        parent::__destruct();
+        //parent::__destruct();
 
         //记录结束时间，计算运行时间
         $this->_end_log();
+
+
     }
 
 
@@ -78,7 +81,6 @@ class MY_Controller extends REST_Controller {
 
         $this->_log_insert_id = $this->db->insert_id();
 
-
     }
 
     private function _start_log(){
@@ -90,7 +92,7 @@ class MY_Controller extends REST_Controller {
     private function _end_log(){
 
         $this->_end_rtime = microtime(TRUE);
-
+        //更新log的runtime
         $this->db->update(
             $this->config->item('rest_logs_table'),
             [
@@ -115,6 +117,23 @@ class MY_Controller extends REST_Controller {
 
     }
 
+    protected function send_error($err_msg, $http_code){
+        $response = array();
+
+        $response['msg'] = $err_msg;
+
+        $this->set_response($response, $http_code);
+
+        $this->_log($response, $http_code);
+
+        //发生错误信息，直接调用结束流程
+        $this->__destruct();
+
+        $this->output->_display();
+
+        exit;
+    }
+
 
     // 不用检查权限的地址
     private function _is_uri_ignore(){
@@ -129,9 +148,7 @@ class MY_Controller extends REST_Controller {
             'example/book/ignore',
         );
 
-
         foreach($ignoreUris as $u) {
-
             if($u == $uri){
                 return true;
             }
@@ -142,16 +159,17 @@ class MY_Controller extends REST_Controller {
 
     protected function check_authorization(){
 
-        if(!$this->_check_is_ignore()){
+        if(!$this->_is_uri_ignore()){
             $this->_key = $this->input->get_request_header($this->config->item('rest_key_name'),true);
 
             $this->_authorized = $this->_key == '101010';
 
             if(!$this->_authorized){
-                echo 'no auth';exit;
-            }
 
+                $this->send_error('API KEY WRONG', REST_Controller::HTTP_UNAUTHORIZED);
+            }
         }
+
     }
 
 //    protected function _check_token(){
