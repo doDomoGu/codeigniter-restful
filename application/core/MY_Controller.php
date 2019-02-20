@@ -158,13 +158,29 @@ class MY_Controller extends REST_Controller {
     protected function check_authorization(){
 
         if(!$this->_is_uri_ignore()){
+
             $this->_key = $this->input->get_request_header($this->config->item('rest_key_name'),true);
 
-            $this->_authorized = $this->_key == '101010';
+            $this->load->model('Auth_Model', 'auth');
+
+
+            list($this->_authorized, $user_id) = $this->auth->auth_token($this->_key);
 
             if(!$this->_authorized){
 
                 $this->send_error('API KEY WRONG', REST_Controller::HTTP_UNAUTHORIZED);
+            } else {
+//                $this->user_id = $user_id;
+//
+//                $this->load->model('User_Model','user');
+//
+//                $user = $this->user->get_one($user_id);
+//
+//                $this->is_admin = (int) $user['role_id'] === $this->user->admin_role_id;
+//
+//                $this->is_reporter = (int) $user['role_id'] === $this->user->reporter_role_id;
+//
+//                $this->is_media = (int) $user['role_id'] === $this->user->media_role_id;
             }
         }
 

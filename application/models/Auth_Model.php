@@ -125,8 +125,7 @@ class Auth_Model extends MY_Model {
         $is_auth = false;
         $user_id = 0;
 
-
-        $one = $this->db->from($this->token_table_name)->where('token',$token)->get()->row_array();
+        $one = $this->db->from($this->table_name)->where('key',$token)->get()->row_array();
 
         if($one)
         {
