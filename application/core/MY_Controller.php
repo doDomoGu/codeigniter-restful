@@ -36,10 +36,12 @@ class MY_Controller extends REST_Controller {
     function __destruct() {
         //parent::__destruct();
 
-        //记录结束时间，计算运行时间
-        $this->_end_log();
+        //options的请求直接结束
+        if ($this->input->method() !== 'options') {
 
-
+            //记录结束时间，计算运行时间
+            $this->_end_log();
+        }
     }
 
 
