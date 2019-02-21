@@ -141,6 +141,10 @@ class MY_Controller extends REST_Controller {
         $ctrl = $this->router->fetch_class();//获取控制器名
         $act = $this->router->fetch_method();//获取方法名
 
+        $RTR =& load_class('Router', 'core', isset($routing) ? $routing : NULL);
+        $ctrl = $RTR->translate_uri_dashes === TRUE ? str_replace('_', '-', $ctrl) : $ctrl;
+        $act = $RTR->translate_uri_dashes === TRUE ? str_replace('_', '-', $act) : $act;
+
         $uri = $dir . $ctrl .'/'. $act;
 
         //不需要检查api-key的地址
