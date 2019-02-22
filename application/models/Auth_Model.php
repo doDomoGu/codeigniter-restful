@@ -139,12 +139,12 @@ class Auth_Model extends MY_Model {
     }
 
 
-    public function check_token ($token) {
+    public function check_token ($key) {
         $is_auth = false;
         $expired = null;
         $user = null;
 
-        $result = $this->db->from($this->table_name)->where('api_key',$token)->get()->row_array();
+        $result = $this->db->from($this->table_name)->where('api_key',$key)->get()->row_array();
 
         if($result)
         {

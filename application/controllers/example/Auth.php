@@ -27,7 +27,7 @@ class Auth extends MY_Controller {
             if(!empty($api_key)) {
                 $this->_data = array(
                     'api_key'       => $api_key,
-                    'expired_time'  => $expired_time
+                    //'expired_time'  => $expired_time
                 );
             } else {
                 $this->_code = self::CODE_TOKEN_CREATE_FAILED;
@@ -41,17 +41,19 @@ class Auth extends MY_Controller {
         $this->send_response();
     }
 
+    //验证token （刷新页面，自动登录）
     public function check_token_post() {
-        $token = trim($this->post('token'));
+        $key = trim($this->post('token'));
 
-        list($is_auth, $expired, $user) = $this->auth->check_token($token);
+        list($is_auth, $expired, $user) = $this->auth->check_token($key);
 
         if ($is_auth)
         {
-            $this->_data = array(
+            /*$this->_data = array(
                 'user_info'  =>  $user,
                 'expired'    => $expired
-            );
+            );*/
+
         }
         else
         {
