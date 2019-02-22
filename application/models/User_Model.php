@@ -29,8 +29,20 @@ class User_Model extends MY_Model {
     public $user_role_id = 2;   //普通用户角色权限
     public $media_role_id = 3;  //媒介角色权限
 
+    public $admin_role_name = 'admin';
+    public $user_role_name = 'user';
+    public $media_role_name = 'media';
+
+    public $role_list = array();
+
     public function __construct() {
         parent::__construct();
+
+        $this->role_list = array(
+            $this->admin_role_id => $this->admin_role_name,
+            $this->user_role_id  => $this->user_role_name,
+            $this->media_role_id => $this->media_role_name
+        );
 
         $this->table_name = 'user';
     }
@@ -106,10 +118,13 @@ class User_Model extends MY_Model {
     }
 
     public function get_one_by_account ($account) {
-        $user = $this->db->from($this->table_name)->where('account', $account)->get()->row_array();
 
-        return $user;
+        $this->db->where('account', $account);
+
+        return $this->db->get($this->table_name)->row_array();
+
     }
+
 
 //    public function validation($data, $scenario = 'defalut'){
 //        //$this->load->helper(array('form', 'url'));

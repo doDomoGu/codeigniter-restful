@@ -12,6 +12,8 @@ class MY_Controller extends REST_Controller {
 
     public $_msg = null;
 
+    public $user_id = 0;
+
     private $_key = NULL;
 
     private $_authorized = NULL;
@@ -169,14 +171,13 @@ class MY_Controller extends REST_Controller {
 
             $this->load->model('Auth_Model', 'auth');
 
-
             list($this->_authorized, $user_id) = $this->auth->auth_token($this->_key);
 
             if(!$this->_authorized){
 
                 $this->send_error('API KEY WRONG', REST_Controller::HTTP_UNAUTHORIZED);
             } else {
-//                $this->user_id = $user_id;
+                $this->user_id = $user_id;
 //
 //                $this->load->model('User_Model','user');
 //

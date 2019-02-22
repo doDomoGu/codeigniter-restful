@@ -25,29 +25,28 @@ class Auth_Model extends MY_Model {
      * @param string $password 密码
      *
      * @return array 数组
-     *           string is_auth 是否验证成功
-     *           array  user    验证成功则返回用户信息,失败则返回 null
-     *           array  token_info  返回创建token的信息
+     *           boolean is_auth 是否验证成功
+     *           string api_key  秘钥
+     *           string expired_time 过期时间
      */
     public function login ($account, $password) {
         $is_auth = false;
-        $user = null;
-        $token_info = array();
+        $api_key = null;
+        $expired_time = null;
+
         $user = $this->user->get_one_by_account($account);
         if($user && $user['password'] == md5($password)) {
             $is_auth = true;
-            unset($user['password']);
         }
+
         if($is_auth) {
             list($result, $key, $expired) = $this->_create_token($user['id']);
             if($result) {
-                $token_info = array(
-                    'key' => $key,
-                    'expired' => $expired
-                );
+                $api_key = $key;
+                $expired_time = $expired;
             }
         }
-        return array($is_auth, $user, $token_info);
+        return array($is_auth, $api_key, $expired_time);
     }
 
 
@@ -73,14 +72,14 @@ class Auth_Model extends MY_Model {
         do
         {
             $key = base64_encode(md5(generate_code()));
-            $one = $this->db->from($this->table_name)->where('key',$key)->get()->row_array();
+            $one = $this->db->from($this->table_name)->where('api_key',$key)->get()->row_array();
         }
         while( $one != NULL);
 
         $expired = date('Y-m-d H:i:s',strtotime($this->config->item('rest_api_key_expired_time').' seconds'));
         $data = array(
             'user_id' => $user_id,
-            'key' => $key,
+            'api_key' => $key,
             'level' => 0, //TODO
             'ignore_limits' => 0, //TODO
             'created_time' => date('Y-m-d H:i:s'),
@@ -121,11 +120,11 @@ class Auth_Model extends MY_Model {
 
     }
 
-    public function auth_token ($token) {
+    public function auth_token ($key) {
         $is_auth = false;
         $user_id = 0;
 
-        $one = $this->db->from($this->table_name)->where('key',$token)->get()->row_array();
+        $one = $this->db->from($this->table_name)->where('api_key',$key)->get()->row_array();
 
         if($one)
         {
@@ -145,7 +144,7 @@ class Auth_Model extends MY_Model {
         $expired = null;
         $user = null;
 
-        $result = $this->db->from($this->token_table_name)->where('token',$token)->get()->row_array();
+        $result = $this->db->from($this->table_name)->where('api_key',$token)->get()->row_array();
 
         if($result)
         {

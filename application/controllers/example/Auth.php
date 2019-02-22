@@ -18,42 +18,67 @@ class Auth extends MY_Controller {
     }
 
     public function login_post() {
-
         $account = trim($this->post('account'));
         $password = trim($this->post('password'));
 
-        list($is_auth, $user , $token_info) = $this->auth->login($account, $password);
+        list($is_auth, $api_key , $expired_time) = $this->auth->login($account, $password);
 
-        if ($is_auth)
-        {
-            if(!empty($token_info)){
+        if($is_auth) {
+            if(!empty($api_key)) {
                 $this->_data = array(
-                    'user_info'  => $user,
-                    'key'      => $token_info['key'],
-                    'expired'    => $token_info['expired']
+                    'api_key'       => $api_key,
+                    'expired_time'  => $expired_time
                 );
-            }else{
+            } else {
                 $this->_code = self::CODE_TOKEN_CREATE_FAILED;
                 $this->_msg = 'Token创建失败';
             }
-        }
-        else
-        {
-            if($user){
-                $this->_code = self::CODE_AUTH_FAILED;
-                $this->_msg = '用户验证错误';
-            }else{
-                $this->_code = self::CODE_USER_NOT_FOUND;
-                $this->_msg = '用户不存在,请联系管理员';
-            }
+        } else {
+            $this->_code = self::CODE_AUTH_FAILED;
+            $this->_msg = '用户验证错误';
         }
 
         $this->send_response();
     }
 
-    public function key_get() {
+    public function check_token_post() {
+        $token = trim($this->post('token'));
+
+        list($is_auth, $expired, $user) = $this->auth->check_token($token);
+
+        if ($is_auth)
+        {
+            $this->_data = array(
+                'user_info'  =>  $user,
+                'expired'    => $expired
+            );
+        }
+        else
+        {
+            $this->_code = self::CODE_TOKEN_AUTH_FAILED;
+            $this->_msg = '验证失败';
+        }
+
+        $this->send_response();
 
 
+    }
+
+    //获取当前用户信息
+    public function user_info_get() {
+        $one = $this->user->get_one($this->user_id);
+        if ($one) {
+            $data = array(
+                'id' => (int) $one['id'],
+                'name' => $one['name'],
+                'roles' => array($this->user->role_list[$one['role_id']])
+            );
+            $this->_data = $data;
+        } else {
+            $this->_code = 10003;
+            $this->_msg = '获取用户信息失败';
+        }
+        $this->send_response();
     }
 
 }
