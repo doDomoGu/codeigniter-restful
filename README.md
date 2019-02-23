@@ -6,9 +6,10 @@
 
 ## 目录结构
 
-* application: 项目应用层代码
-* system: CI的源代码（一般不要去动）
-* index.php: 项目入口文件
+* application 项目应用层代码
+  * config 配置
+* system CI的源代码（一般不要去动）
+* index.php 项目入口文件
 <!-- * composer.json: 声明所需要依赖的PHP代码库，需要执行composer install安装依赖。
 * vendor: composer依赖包的目录（不用管，不用进git库） -->
 
