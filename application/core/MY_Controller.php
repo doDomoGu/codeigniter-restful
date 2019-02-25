@@ -47,30 +47,13 @@ class MY_Controller extends REST_Controller {
     }
 
 
-    /*
-           CREATE TABLE `logs` (
-               `id` INT(11) NOT NULL AUTO_INCREMENT,
-               `uri` VARCHAR(255) NOT NULL,
-               `method` VARCHAR(6) NOT NULL,
-               `params` TEXT DEFAULT NULL,
-               `api_key` VARCHAR(40) DEFAULT NULL,
-               `ip_address` VARCHAR(45) NOT NULL,
-               `time` INT(11) NOT NULL,
-               `rtime` FLOAT DEFAULT NULL,
-               `authorized` VARCHAR(1) DEFAULT NULL,
-               `response_data` TEXT DEFAULT NULL,
-               `response_code` smallint(3) DEFAULT '0',
-               PRIMARY KEY (`id`)
-           ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-    */
-
     private function _log($response, $http_code){
 
         $data = array(
             'uri' => $this->uri->uri_string(), //site_url($this->uri->uri_string())
             'method' => $this->request->method,
             'params' => json_encode($this->{$this->request->method}()),
-            'api_key' => $this->_key ,
+            $this->config->item('rest_key_column') => $this->_key ,
             'ip_address' => $this->input->ip_address(),
             'time' => date('Y-m-d H:i:s'),
             'authorized' => $this->_authorized,

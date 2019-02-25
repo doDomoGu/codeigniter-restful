@@ -18,6 +18,8 @@ CREATE TABLE `api_token` (
 
 $config['rest_keys_table'] = 'api_token';
 
+$config['rest_key_column'] = 'api_key';
+
 /*
 CREATE TABLE `api_log` (
    `id` INT(11) NOT NULL AUTO_INCREMENT,
@@ -40,11 +42,11 @@ $config['rest_logs_table'] = 'api_log';
 //不需要验证 key 的uri列表
 $config['rest_ignore_uris'] = [
     'post|example/auth/login',
-    'post|example/auth/token'
+    'post|example/auth/token-verification'
 ];
 
 //api_key 过期时间
-$config['rest_api_key_expired_time'] = 3600;
+$config['rest_api_key_expired_time'] = 3600 * 24;
 
 
 $config['check_cors'] = TRUE;

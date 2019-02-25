@@ -72,14 +72,14 @@ class Auth_Model extends MY_Model {
         do
         {
             $key = base64_encode(md5(generate_code()));
-            $one = $this->db->from($this->table_name)->where('api_key',$key)->get()->row_array();
+            $one = $this->db->from($this->table_name)->where($this->config->item('rest_key_column'),$key)->get()->row_array();
         }
         while( $one != NULL);
 
         $expired = date('Y-m-d H:i:s',strtotime($this->config->item('rest_api_key_expired_time').' seconds'));
         $data = array(
             'user_id' => $user_id,
-            'api_key' => $key,
+            $this->config->item('rest_key_column') => $key,
             'level' => 0, //TODO
             'ignore_limits' => 0, //TODO
             'created_time' => date('Y-m-d H:i:s'),
@@ -102,14 +102,14 @@ class Auth_Model extends MY_Model {
     public function disable_token ($token)
     {
 
-        $one = $this->db->from($this->token_table_name)->where('token',$token)->get()->row_array();
+        $one = $this->db->from($this->table_name)->where($this->config->item('rest_key_column'),$token)->get()->row_array();
 
         if($one)
         {
 
             $this->db->set('expired_time', date('Y-m-d H:i:s',strtotime('-1 second')));
             $this->db->where('id', $one['id']);
-            $this->db->update($this->token_table_name);
+            $this->db->update($this->table_name);
             if( $this->db->affected_rows() == 1)
             {
                 return true;
@@ -124,7 +124,7 @@ class Auth_Model extends MY_Model {
         $is_auth = false;
         $user_id = 0;
 
-        $one = $this->db->from($this->table_name)->where('api_key',$key)->get()->row_array();
+        $one = $this->db->from($this->table_name)->where($this->config->item('rest_key_column'),$key)->get()->row_array();
 
         if($one)
         {
@@ -144,7 +144,7 @@ class Auth_Model extends MY_Model {
         $expired = null;
         $user = null;
 
-        $result = $this->db->from($this->table_name)->where('api_key',$key)->get()->row_array();
+        $result = $this->db->from($this->table_name)->where($this->config->item('rest_key_column'),$key)->get()->row_array();
 
         if($result)
         {

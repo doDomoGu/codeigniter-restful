@@ -27,7 +27,7 @@ class Auth extends MY_Controller {
         if($is_auth) {
             if(!empty($api_key)) {
                 $this->_data = array(
-                    'api_key'       => $api_key,
+                    $this->config->item('rest_key_column') => $api_key,
                     //'expired_time'  => $expired_time
                 );
             } else {
@@ -44,11 +44,11 @@ class Auth extends MY_Controller {
 
     //验证token （用于刷新页面时，使用LocalStorage中储存的key请求服务器验证，验证通过后自动登录）
     public function token_verification_post() {
-        $key = trim($this->post('token'));
+        $key = trim($this->post('key'));
 
         list($is_auth, $expired, $user) = $this->auth->check_token($key);
 
-        if ($is_auth) {
+        if (!$is_auth) {
             $this->_code = self::CODE_TOKEN_AUTH_FAILED;
             $this->_msg = '验证失败';
         }
@@ -72,6 +72,22 @@ class Auth extends MY_Controller {
             $this->_code = 10003;
             $this->_msg = '获取用户信息失败';
         }
+        $this->send_response();
+    }
+
+    //用户退出
+    public function logout_delete()
+    {
+        $token = $this->input->get_request_header($this->config->item('rest_key_name'),true);
+
+        $result = $this->auth->disable_token($token);
+
+        if (!$result)
+        {
+            $this->_code = self::CODE_USER_LOGOUT_FAILED;
+            $this->_msg = '用户退出失败';
+        }
+
         $this->send_response();
     }
 
