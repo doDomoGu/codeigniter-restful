@@ -17,6 +17,7 @@ class Auth extends MY_Controller {
         $this->load->model('Auth_Model','auth');
     }
 
+    //用户登录
     public function login_post() {
         $account = trim($this->post('account'));
         $password = trim($this->post('password'));
@@ -41,22 +42,13 @@ class Auth extends MY_Controller {
         $this->send_response();
     }
 
-    //验证token （刷新页面，自动登录）
-    public function check_token_post() {
+    //验证token （用于刷新页面时，使用LocalStorage中储存的key请求服务器验证，验证通过后自动登录）
+    public function token_verification_post() {
         $key = trim($this->post('token'));
 
         list($is_auth, $expired, $user) = $this->auth->check_token($key);
 
-        if ($is_auth)
-        {
-            /*$this->_data = array(
-                'user_info'  =>  $user,
-                'expired'    => $expired
-            );*/
-
-        }
-        else
-        {
+        if ($is_auth) {
             $this->_code = self::CODE_TOKEN_AUTH_FAILED;
             $this->_msg = '验证失败';
         }
@@ -67,7 +59,7 @@ class Auth extends MY_Controller {
     }
 
     //获取当前用户信息
-    public function user_info_get() {
+    public function info_get() {
         $one = $this->user->get_one($this->user_id);
         if ($one) {
             $data = array(
