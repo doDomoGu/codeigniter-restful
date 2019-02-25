@@ -2,21 +2,6 @@
 
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-/*
-CREATE TABLE `user` (
-    `id` int(20) NOT NULL AUTO_INCREMENT,
-    `account` varchar(100) CHARACTER SET utf8 NOT NULL,
-    `password` varchar(100) CHARACTER SET utf8 NOT NULL,
-    `name` varchar(100) CHARACTER SET utf8 NOT NULL,
-    `role_id` tinyint(1) NOT NULL DEFAULT '0',
-    `status` tinyint(1) NOT NULL DEFAULT '0',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `account` (`account`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
-*/
-
-
-
 class User_Model extends MY_Model {
 
 //    public $table_name = 'user';
