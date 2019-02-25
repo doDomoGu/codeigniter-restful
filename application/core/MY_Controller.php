@@ -141,6 +141,8 @@ class MY_Controller extends REST_Controller {
 
     // 不用检查权限的地址
     private function _is_uri_ignore(){
+        $method = $this->input->method();//获取请求类型
+
         $dir = $this->router->fetch_directory();//获取目录
         $ctrl = $this->router->fetch_class();//获取控制器名
         $act = $this->router->fetch_method();//获取方法名
@@ -149,7 +151,7 @@ class MY_Controller extends REST_Controller {
         $ctrl = $RTR->translate_uri_dashes === TRUE ? str_replace('_', '-', $ctrl) : $ctrl;
         $act = $RTR->translate_uri_dashes === TRUE ? str_replace('_', '-', $act) : $act;
 
-        $uri = $dir . $ctrl .'/'. $act;
+        $uri = $method . '|' . $dir . $ctrl .'/'. $act;
 
         //不需要检查api-key的地址
         $ignoreUris = $this->config->item('rest_ignore_uris');
