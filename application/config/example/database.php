@@ -6,10 +6,10 @@ $query_builder = TRUE;
 
 $db['default'] = array(
 	'dsn'	=> '',
-	'hostname' => 'localhost',
-	'username' => 'gljgljglj',
-	'password' => 'gljgogo',
-	'database' => 'restserver',
+	'hostname' => '10.21.10.240',
+	'username' => 'root',
+	'password' => 'point9*',
+	'database' => 'vue_pro',
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',
 	'pconnect' => FALSE,
