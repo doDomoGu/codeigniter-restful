@@ -3,6 +3,8 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Treenode extends MY_Controller {
+    public $page_size = 20;
+
     public $type_arr = [
         'C' => 'campaign',
         'O' => 'order',
@@ -82,23 +84,60 @@ class Treenode extends MY_Controller {
             'big'       => $b['start_id'] + $b['num']['big'] - 1,      //大数据结束ID
         ];
 
-        return ['c'=>$c,'o'=>$o,'s'=>$s,'b'=>$b];
+        return ['C'=>$c,'O'=>$o,'S'=>$s,'B'=>$b];
     }
 
     public function index_get() {
 
-        $type = $this->get('type');
+        $type = $this->get('type');  //父资源类型 做降级处理
+        switch($type){
+            case 'C';
+                $type = 'O';
+                break;
+            case 'O';
+                $type = 'S';
+                break;
+            case 'S';
+                $type = 'B';
+                break;
+            default:
+                $type = 'C';
+        }
 
-        $dataType = $this->get('data_type', 'small');
+        $p_id = (int) $this->get('p_id');
 
+        $dataType = $this->get('data_type');
 
-        if($type && isset($this->type_arr[$type])){
+        $page = (int) $this->get('page');
+
+        if(!$page){
+            $page = 1;
+        }
+
+        if(in_array($dataType,['small','middle','big'])){
 
             $this->db->select(['id', 'name']);
 
-            $this->db->where(['id <= '=>$this->num['c']['end_id']['small']]);
+            $this->db->where(['id <= '=>$this->num[$type]['end_id'][$dataType]]);
 
-            $this->_data = $this->db->get($this->tablename_arr[$type])->result_array();
+            if($type !== 'C'){
+                $this->db->where(['p_id'=>$p_id]);
+            }
+
+            $this->db->limit($this->page_size, $this->page_size * ($page - 1));
+
+            $result = $this->db->get($this->tablename_arr[$type])->result_array();
+
+
+            foreach($result as $k=>$v){
+                $result[$k]['id'] = (int)$v['id'];
+                $result[$k]['type'] = $type;
+                if($type=='B'){
+                    $result[$k]['leaf'] = true;
+                }
+            }
+
+            $this->_data = $result;
         }else{
             $this->_code = 10003;
             $this->_msg = '获取信息失败';
@@ -185,7 +224,7 @@ class Treenode extends MY_Controller {
             $cData[] = [
                 'id' => $this->num['c']['start_id'] + $i,
                 'name' => $cName . ($i>0?'-'.($i+1):''),
-                'enable' => 1
+                'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
         $this->db->insert_batch($this->tablename_arr['C'], $cData);
@@ -196,7 +235,7 @@ class Treenode extends MY_Controller {
             $cData[] = [
                 'id' => $this->num['c']['start_id'] + $i,
                 'name' => $cName . ($i>0?'-'.($i+1):''),
-                'enable' => 1
+                'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
         $this->db->insert_batch($this->tablename_arr['C'], $cData);
@@ -207,7 +246,7 @@ class Treenode extends MY_Controller {
             $cData[] = [
                 'id' => $this->num['c']['start_id'] + $i,
                 'name' => $cName . ($i>0?'-'.($i+1):''),
-                'enable' => 1
+                'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
         $this->db->insert_batch($this->tablename_arr['C'], $cData);
@@ -222,7 +261,7 @@ class Treenode extends MY_Controller {
                 'id' => $this->num['o']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
                 'p_id' => mt_rand($this->num['c']['start_id'], $this->num['c']['end_id']['small']),
-                'enable' => 1
+                'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
         $this->db->insert_batch($this->tablename_arr['O'], $data);
@@ -234,7 +273,7 @@ class Treenode extends MY_Controller {
                 'id' => $this->num['o']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
                 'p_id' => mt_rand($this->num['c']['start_id'], $this->num['c']['end_id']['middle']),
-                'enable' => 1
+                'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
         $this->db->insert_batch($this->tablename_arr['O'], $data);
@@ -246,7 +285,7 @@ class Treenode extends MY_Controller {
                 'id' => $this->num['o']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
                 'p_id' => mt_rand($this->num['c']['start_id'], $this->num['c']['end_id']['big']),
-                'enable' => 1
+                'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
         $this->db->insert_batch($this->tablename_arr['O'], $data);
@@ -262,7 +301,7 @@ class Treenode extends MY_Controller {
                 'id' => $this->num['s']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
                 'p_id' => mt_rand($this->num['o']['start_id'], $this->num['o']['end_id']['small']),
-                'enable' => 1
+                'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
         $this->db->insert_batch($this->tablename_arr['S'], $data);
@@ -274,7 +313,7 @@ class Treenode extends MY_Controller {
                 'id' => $this->num['s']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
                 'p_id' => mt_rand($this->num['o']['start_id'], $this->num['o']['end_id']['middle']),
-                'enable' => 1
+                'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
         $this->db->insert_batch($this->tablename_arr['S'], $data);
@@ -286,7 +325,7 @@ class Treenode extends MY_Controller {
                 'id' => $this->num['s']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
                 'p_id' => mt_rand($this->num['o']['start_id'], $this->num['o']['end_id']['big']),
-                'enable' => 1
+                'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
         $this->db->insert_batch($this->tablename_arr['S'], $data);
@@ -302,7 +341,7 @@ class Treenode extends MY_Controller {
                 'id' => $this->num['b']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
                 'p_id' => mt_rand($this->num['s']['start_id'], $this->num['s']['end_id']['small']),
-                'enable' => 1
+                'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
         $this->db->insert_batch($this->tablename_arr['B'], $data);
@@ -314,7 +353,7 @@ class Treenode extends MY_Controller {
                 'id' => $this->num['b']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
                 'p_id' => mt_rand($this->num['s']['start_id'], $this->num['s']['end_id']['middle']),
-                'enable' => 1
+                'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
         $this->db->insert_batch($this->tablename_arr['B'], $data);
@@ -326,7 +365,7 @@ class Treenode extends MY_Controller {
                 'id' => $this->num['b']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
                 'p_id' => mt_rand($this->num['s']['start_id'], $this->num['s']['end_id']['big']),
-                'enable' => 1
+                'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
         $this->db->insert_batch($this->tablename_arr['B'], $data);
