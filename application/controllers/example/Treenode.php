@@ -3,14 +3,15 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Treenode extends MY_Controller {
-    public $page_size = 20;
+    public $default_page_size = 20;
+    public $default_page = 1;
 
-    public $type_arr = [
+    /*public $type_arr = [
         'C' => 'campaign',
         'O' => 'order',
         'S' => 'solution',
         'B' => 'banner'
-    ];
+    ];*/
 
     public $tablename_arr = [
         'C' => '_campaign',
@@ -33,8 +34,8 @@ class Treenode extends MY_Controller {
         $c['start_id'] = 100001; //开始ID
         $c['num'] = [
             'small'     => 100,   //小数据个数
-            'middle'    => 1000,  //中数据个数 (包含小数据）
-            'big'       => 3000,  //大数据个数 (包含小数据和中数据）
+            'middle'    => 2000,  //中数据个数 (包含小数据）
+            'big'       => 5000,  //大数据个数 (包含小数据和中数据）
         ];
         $c['end_id'] = [
             'small'     => $c['start_id'] + $c['num']['small'] - 1,    //小数据结束ID
@@ -47,8 +48,8 @@ class Treenode extends MY_Controller {
         $o['start_id'] = 200001; //开始ID
         $o['num'] = [
             'small'     => 300,   //小数据个数
-            'middle'    => 1800,   //中数据个数
-            'big'       => 7800,  //大数据个数
+            'middle'    => 2400,   //中数据个数
+            'big'       => 8800,  //大数据个数
         ];
         $o['end_id'] = [
             'small'     => $o['start_id'] + $o['num']['small'] - 1,    //小数据结束ID
@@ -60,9 +61,9 @@ class Treenode extends MY_Controller {
         $s = [];
         $s['start_id'] = 300001; //开始ID
         $s['num'] = [
-            'small'     => 600,   //小数据个数
-            'middle'    => 3000,   //中数据个数
-            'big'       => 15000,  //大数据个数
+            'small'     => 800,   //小数据个数
+            'middle'    => 5000,   //中数据个数
+            'big'       => 20000,  //大数据个数
         ];
         $s['end_id'] = [
             'small'     => $s['start_id'] + $s['num']['small'] - 1,    //小数据结束ID
@@ -74,9 +75,9 @@ class Treenode extends MY_Controller {
         $b = [];
         $b['start_id'] = 400001; //开始ID
         $b['num'] = [
-            'small'     => 1000,   //小数据个数
+            'small'     => 1200,   //小数据个数
             'middle'    => 8000,   //中数据个数
-            'big'       => 80000,  //大数据个数
+            'big'       => 90000,  //大数据个数
         ];
         $b['end_id'] = [
             'small'     => $b['start_id'] + $b['num']['small'] - 1,    //小数据结束ID
@@ -89,61 +90,62 @@ class Treenode extends MY_Controller {
 
     public function index_get() {
 
-        $type = $this->get('type');  //父资源类型 做降级处理
-        switch($type){
-            case 'C';
-                $type = 'O';
-                break;
-            case 'O';
-                $type = 'S';
-                break;
-            case 'S';
-                $type = 'B';
-                break;
-            default:
-                $type = 'C';
-        }
-
+        //父资源类型
+        $pType = $this->get('p_type');
+        //当前资源类型， 做降级处理
+        $typeArr = [ 'C'=>'O','O'=>'S','S'=>'B' ];
+        $type = isset($typeArr[$pType]) ? $typeArr[$pType] : 'C';
+        //父ID
         $p_id = (int) $this->get('p_id');
-
-        $dataType = $this->get('data_type');
-
+        //数据量选项 small/middle/big
+        $data_type = $this->get('data_type');
+        if(!in_array($data_type,['small','middle','big'])){
+            $data_type = 'small';
+        }
+        //当前页数
         $page = (int) $this->get('page');
-
         if(!$page){
-            $page = 1;
+            $page = $this->default_page;
+        }
+        //每页显示数
+        $page_size = (int) $this->get('page_size');
+        if(!$page_size){
+            $page_size = $this->default_page_size;
         }
 
-        if(in_array($dataType,['small','middle','big'])){
+        /* 数据库查询 */
+        $this->handle_condition($type, $p_id, $data_type);
+        $total = $this->db->count_all_results();
 
-            $this->db->select(['id', 'name']);
+        //分页条件
+        $this->handle_condition($type, $p_id, $data_type);
+        $this->db->limit($page_size, $page_size * ($page - 1));
+        $result = $this->db->get()->result_array();
 
-            $this->db->where(['id <= '=>$this->num[$type]['end_id'][$dataType]]);
-
-            if($type !== 'C'){
-                $this->db->where(['p_id'=>$p_id]);
+        /* 组装数据 */
+        $list = [];
+        foreach($result as $k=>$v){
+            $list[$k]['id'] = (int)$v['id'];
+            $list[$k]['label'] = $v['name'];
+            $list[$k]['type'] = $type;
+            if($type == 'B'){ //创意类型增加叶节点标志
+                $list[$k]['isLeaf'] = true;
             }
-
-            $this->db->limit($this->page_size, $this->page_size * ($page - 1));
-
-            $result = $this->db->get($this->tablename_arr[$type])->result_array();
-
-
-            foreach($result as $k=>$v){
-                $result[$k]['id'] = (int)$v['id'];
-                $result[$k]['type'] = $type;
-                if($type=='B'){
-                    $result[$k]['leaf'] = true;
-                }
-            }
-
-            $this->_data = $result;
-        }else{
-            $this->_code = 10003;
-            $this->_msg = '获取信息失败';
         }
 
+        $this->_data = ['total'=>$total,'list'=>$list];
         $this->send_response();
+    }
+
+    private function handle_condition($type, $p_id, $data_type){
+        $this->db->select(['id', 'name']);
+        //根据数据量选项 选择数据范围
+        $this->db->where(['id <= '=>$this->num[$type]['end_id'][$data_type]]);
+        //不是活动类型需要加父ID
+        if($type !== 'C'){
+            $this->db->where(['p_id'=>$p_id]);
+        }
+        $this->db->from($this->tablename_arr[$type]);
     }
 
 
@@ -220,9 +222,9 @@ class Treenode extends MY_Controller {
 
         //活动 - 小数据
         $cData = [];
-        for($i = 0; $i < $this->num['c']['num']['small'] ;$i++){
+        for($i = 0; $i < $this->num['C']['num']['small'] ;$i++){
             $cData[] = [
-                'id' => $this->num['c']['start_id'] + $i,
+                'id' => $this->num['C']['start_id'] + $i,
                 'name' => $cName . ($i>0?'-'.($i+1):''),
                 'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
@@ -231,9 +233,9 @@ class Treenode extends MY_Controller {
 
         //活动 - 中数据
         $cData = [];
-        for($i = $this->num['c']['num']['small']; $i < $this->num['c']['num']['middle'] ;$i++){
+        for($i = $this->num['C']['num']['small']; $i < $this->num['C']['num']['middle'] ;$i++){
             $cData[] = [
-                'id' => $this->num['c']['start_id'] + $i,
+                'id' => $this->num['C']['start_id'] + $i,
                 'name' => $cName . ($i>0?'-'.($i+1):''),
                 'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
@@ -242,9 +244,9 @@ class Treenode extends MY_Controller {
 
         //活动 - 大数据
         $cData = [];
-        for($i = $this->num['c']['num']['middle']; $i < $this->num['c']['num']['big'] ;$i++){
+        for($i = $this->num['C']['num']['middle']; $i < $this->num['C']['num']['big'] ;$i++){
             $cData[] = [
-                'id' => $this->num['c']['start_id'] + $i,
+                'id' => $this->num['C']['start_id'] + $i,
                 'name' => $cName . ($i>0?'-'.($i+1):''),
                 'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
@@ -256,11 +258,11 @@ class Treenode extends MY_Controller {
 
         //订单 - 小数据
         $data = [];
-        for($i = 0; $i < $this->num['o']['num']['small'] ;$i++){
+        for($i = 0; $i < $this->num['O']['num']['small'] ;$i++){
             $data[] = [
-                'id' => $this->num['o']['start_id'] + $i,
+                'id' => $this->num['O']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
-                'p_id' => mt_rand($this->num['c']['start_id'], $this->num['c']['end_id']['small']),
+                'p_id' => mt_rand($this->num['C']['start_id'], $this->num['C']['end_id']['small']),
                 'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
@@ -268,11 +270,11 @@ class Treenode extends MY_Controller {
 
         //订单 - 中数据
         $data = [];
-        for($i = $this->num['o']['num']['small']; $i < $this->num['o']['num']['middle'] ;$i++){
+        for($i = $this->num['O']['num']['small']; $i < $this->num['O']['num']['middle'] ;$i++){
             $data[] = [
-                'id' => $this->num['o']['start_id'] + $i,
+                'id' => $this->num['O']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
-                'p_id' => mt_rand($this->num['c']['start_id'], $this->num['c']['end_id']['middle']),
+                'p_id' => mt_rand($this->num['C']['start_id'], $this->num['C']['end_id']['middle']),
                 'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
@@ -280,11 +282,11 @@ class Treenode extends MY_Controller {
 
         //订单 - 大数据
         $data = [];
-        for($i = $this->num['o']['num']['middle']; $i < $this->num['o']['num']['big'] ;$i++){
+        for($i = $this->num['O']['num']['middle']; $i < $this->num['O']['num']['big'] ;$i++){
             $data[] = [
-                'id' => $this->num['o']['start_id'] + $i,
+                'id' => $this->num['O']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
-                'p_id' => mt_rand($this->num['c']['start_id'], $this->num['c']['end_id']['big']),
+                'p_id' => mt_rand($this->num['C']['start_id'], $this->num['C']['end_id']['big']),
                 'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
@@ -296,11 +298,11 @@ class Treenode extends MY_Controller {
 
         //投放 - 小数据
         $data = [];
-        for($i = 0; $i < $this->num['s']['num']['small'] ;$i++){
+        for($i = 0; $i < $this->num['S']['num']['small'] ;$i++){
             $data[] = [
-                'id' => $this->num['s']['start_id'] + $i,
+                'id' => $this->num['S']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
-                'p_id' => mt_rand($this->num['o']['start_id'], $this->num['o']['end_id']['small']),
+                'p_id' => mt_rand($this->num['O']['start_id'], $this->num['O']['end_id']['small']),
                 'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
@@ -308,11 +310,11 @@ class Treenode extends MY_Controller {
 
         //投放 - 中数据
         $data = [];
-        for($i = $this->num['s']['num']['small']; $i < $this->num['s']['num']['middle'] ;$i++){
+        for($i = $this->num['S']['num']['small']; $i < $this->num['S']['num']['middle'] ;$i++){
             $data[] = [
-                'id' => $this->num['s']['start_id'] + $i,
+                'id' => $this->num['S']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
-                'p_id' => mt_rand($this->num['o']['start_id'], $this->num['o']['end_id']['middle']),
+                'p_id' => mt_rand($this->num['O']['start_id'], $this->num['O']['end_id']['middle']),
                 'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
@@ -320,11 +322,11 @@ class Treenode extends MY_Controller {
 
         //投放 - 大数据
         $data = [];
-        for($i = $this->num['s']['num']['middle']; $i < $this->num['s']['num']['big'] ;$i++){
+        for($i = $this->num['S']['num']['middle']; $i < $this->num['S']['num']['big'] ;$i++){
             $data[] = [
-                'id' => $this->num['s']['start_id'] + $i,
+                'id' => $this->num['S']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
-                'p_id' => mt_rand($this->num['o']['start_id'], $this->num['o']['end_id']['big']),
+                'p_id' => mt_rand($this->num['O']['start_id'], $this->num['O']['end_id']['big']),
                 'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
@@ -336,11 +338,11 @@ class Treenode extends MY_Controller {
 
         //创意 - 小数据
         $data = [];
-        for($i = 0; $i < $this->num['b']['num']['small'] ;$i++){
+        for($i = 0; $i < $this->num['B']['num']['small'] ;$i++){
             $data[] = [
-                'id' => $this->num['b']['start_id'] + $i,
+                'id' => $this->num['B']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
-                'p_id' => mt_rand($this->num['s']['start_id'], $this->num['s']['end_id']['small']),
+                'p_id' => mt_rand($this->num['S']['start_id'], $this->num['S']['end_id']['small']),
                 'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
@@ -348,11 +350,11 @@ class Treenode extends MY_Controller {
 
         //创意 - 中数据
         $data = [];
-        for($i = $this->num['b']['num']['small']; $i < $this->num['b']['num']['middle'] ;$i++){
+        for($i = $this->num['B']['num']['small']; $i < $this->num['B']['num']['middle'] ;$i++){
             $data[] = [
-                'id' => $this->num['b']['start_id'] + $i,
+                'id' => $this->num['B']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
-                'p_id' => mt_rand($this->num['s']['start_id'], $this->num['s']['end_id']['middle']),
+                'p_id' => mt_rand($this->num['S']['start_id'], $this->num['S']['end_id']['middle']),
                 'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
@@ -360,11 +362,11 @@ class Treenode extends MY_Controller {
 
         //创意 - 大数据
         $data = [];
-        for($i = $this->num['b']['num']['middle']; $i < $this->num['b']['num']['big'] ;$i++){
+        for($i = $this->num['B']['num']['middle']; $i < $this->num['B']['num']['big'] ;$i++){
             $data[] = [
-                'id' => $this->num['b']['start_id'] + $i,
+                'id' => $this->num['B']['start_id'] + $i,
                 'name' => $name . ($i>0?'-'.($i+1):''),
-                'p_id' => mt_rand($this->num['s']['start_id'], $this->num['s']['end_id']['big']),
+                'p_id' => mt_rand($this->num['S']['start_id'], $this->num['S']['end_id']['big']),
                 'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
         }
