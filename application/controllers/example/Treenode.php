@@ -31,11 +31,11 @@ class Treenode extends MY_Controller {
 
         //活动
         $c = [];
-        $c['start_id'] = 100001; //开始ID
+        $c['start_id'] = 10000001; //开始ID
         $c['num'] = [
-            'small'     => 100,   //小数据个数
-            'middle'    => 2000,  //中数据个数 (包含小数据）
-            'big'       => 5000,  //大数据个数 (包含小数据和中数据）
+            'small'     => 50,   //小数据个数
+            'middle'    => 100,  //中数据个数 (包含小数据）
+            'big'       => 200,  //大数据个数 (包含小数据和中数据）
         ];
         $c['end_id'] = [
             'small'     => $c['start_id'] + $c['num']['small'] - 1,    //小数据结束ID
@@ -45,10 +45,10 @@ class Treenode extends MY_Controller {
 
         //订单
         $o = [];
-        $o['start_id'] = 200001; //开始ID
+        $o['start_id'] = 20000001; //开始ID
         $o['num'] = [
-            'small'     => 300,   //小数据个数
-            'middle'    => 2400,   //中数据个数
+            'small'     => 1200,   //小数据个数
+            'middle'    => 4400,   //中数据个数
             'big'       => 8800,  //大数据个数
         ];
         $o['end_id'] = [
@@ -59,11 +59,11 @@ class Treenode extends MY_Controller {
 
         //投放
         $s = [];
-        $s['start_id'] = 300001; //开始ID
+        $s['start_id'] = 30000001; //开始ID
         $s['num'] = [
-            'small'     => 800,   //小数据个数
-            'middle'    => 5000,   //中数据个数
-            'big'       => 20000,  //大数据个数
+            'small'     => 2000,   //小数据个数
+            'middle'    => 10000,   //中数据个数
+            'big'       => 40000,  //大数据个数
         ];
         $s['end_id'] = [
             'small'     => $s['start_id'] + $s['num']['small'] - 1,    //小数据结束ID
@@ -73,11 +73,11 @@ class Treenode extends MY_Controller {
 
         //创意
         $b = [];
-        $b['start_id'] = 400001; //开始ID
+        $b['start_id'] = 40000001; //开始ID
         $b['num'] = [
-            'small'     => 1200,   //小数据个数
-            'middle'    => 8000,   //中数据个数
-            'big'       => 90000,  //大数据个数
+            'small'     => 10000,   //小数据个数
+            'middle'    => 100000,   //中数据个数
+            'big'       => 1000000,  //大数据个数
         ];
         $b['end_id'] = [
             'small'     => $b['start_id'] + $b['num']['small'] - 1,    //小数据结束ID
@@ -89,12 +89,11 @@ class Treenode extends MY_Controller {
     }
 
     public function index_get() {
-
         //父资源类型
         $pType = $this->get('p_type');
         //当前资源类型， 做降级处理
-        $typeArr = [ 'C'=>'O','O'=>'S','S'=>'B' ];
-        $type = isset($typeArr[$pType]) ? $typeArr[$pType] : 'C';
+        $typeLowerArr = [ 'C'=>'O','O'=>'S','S'=>'B' ];
+        $type = isset($typeLowerArr[$pType]) ? $typeLowerArr[$pType] : 'C';
         //父ID
         $p_id = (int) $this->get('p_id');
         //数据量选项 small/middle/big
@@ -113,39 +112,64 @@ class Treenode extends MY_Controller {
             $page_size = $this->default_page_size;
         }
 
-        /* 数据库查询 */
+        //获取总数
         $this->handle_condition($type, $p_id, $data_type);
         $total = $this->db->count_all_results();
 
-        //分页条件
+        //获取分页数据
         $this->handle_condition($type, $p_id, $data_type);
         $this->db->limit($page_size, $page_size * ($page - 1));
+//        if($type!='B'){
+//            $tbl = $this->tablename_arr[$type];
+//            $tbl2 = $this->tablename_arr[$typeLowerArr[$type]];
+//            $this->db->join($tbl2, $tbl2.'.p_id = '.$tbl.'.id');
+//        }
         $result = $this->db->get()->result_array();
 
-        /* 组装数据 */
+//        var_dump($this->db->last_query());
+
+        //组装数据
         $list = [];
         foreach($result as $k=>$v){
             $list[$k]['id'] = (int)$v['id'];
             $list[$k]['label'] = $v['name'];
             $list[$k]['type'] = $type;
-            if($type == 'B'){ //创意类型增加叶节点标志
+            //创意类型增加叶节点标志
+            if($type == 'B'){
                 $list[$k]['isLeaf'] = true;
+            }else{
+                //非创意类型获取子节点总数和分页相关信息
+                $tbl2 = $this->tablename_arr[$typeLowerArr[$type]];
+                $this->db->where([$tbl2.'.p_id'=> (int) $v['id']]);
+                $this->db->where([$tbl2.'.id <= '=>$this->num[$typeLowerArr[$type]]['end_id'][$data_type]]);
+                $this->db->from($tbl2);
+                $childrenCount = $this->db->count_all_results();
+                $list[$k]['childrenCount'] = $childrenCount;
+//                $list[$k]['isLeaf'] = $childrenCount == 0;
+                $list[$k]['page_size'] = $page_size;
+                $list[$k]['current_page'] = 1;
+                $list[$k]['total_page'] = 1;
+
+
+
+
             }
         }
 
-        $this->_data = ['total'=>$total,'list'=>$list];
+        $this->_data = ['total'=>$total, 'list'=>$list, 'page_size'=>$page_size, 'current_page'=>$page, 'total_page'=>ceil($total/$page_size)];
         $this->send_response();
     }
 
     private function handle_condition($type, $p_id, $data_type){
-        $this->db->select(['id', 'name']);
+        $tbl = $this->tablename_arr[$type];
+        $this->db->select([$tbl.'.id', $tbl.'.name']);
         //根据数据量选项 选择数据范围
-        $this->db->where(['id <= '=>$this->num[$type]['end_id'][$data_type]]);
+        $this->db->where([$tbl.'.id <= '=>$this->num[$type]['end_id'][$data_type]]);
         //不是活动类型需要加父ID
         if($type !== 'C'){
-            $this->db->where(['p_id'=>$p_id]);
+            $this->db->where([$tbl.'.p_id'=>$p_id]);
         }
-        $this->db->from($this->tablename_arr[$type]);
+        $this->db->from($tbl);
     }
 
 
@@ -205,14 +229,17 @@ class Treenode extends MY_Controller {
 
         $this->dbforge->add_field($fields2);
         $this->dbforge->add_key('id', TRUE);
+        $this->dbforge->add_key('p_id');
         $this->dbforge->create_table($this->tablename_arr['O'], FALSE, ['ENGINE'=>'MyISAM']);
 
         $this->dbforge->add_field($fields2);
         $this->dbforge->add_key('id', TRUE);
+        $this->dbforge->add_key('p_id');
         $this->dbforge->create_table($this->tablename_arr['S'], FALSE, ['ENGINE'=>'MyISAM']);
 
         $this->dbforge->add_field($fields2);
         $this->dbforge->add_key('id', TRUE);
+        $this->dbforge->add_key('p_id');
         $this->dbforge->create_table($this->tablename_arr['B'], FALSE, ['ENGINE'=>'MyISAM']);
 
         //插入数据
@@ -369,9 +396,11 @@ class Treenode extends MY_Controller {
                 'p_id' => mt_rand($this->num['S']['start_id'], $this->num['S']['end_id']['big']),
                 'enable' => mt_rand(0,1)? 1 : (mt_rand(0,1)  ? 1 : mt_rand(0,2))
             ];
+            if(count($data)>=10000){
+                $this->db->insert_batch($this->tablename_arr['B'], $data);
+                $data = [];
+            }
         }
-        $this->db->insert_batch($this->tablename_arr['B'], $data);
-
     }
 
 }
