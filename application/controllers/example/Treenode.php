@@ -92,71 +92,89 @@ class Treenode extends MY_Controller {
         //父资源类型
         $pType = $this->get('p_type');
         //当前资源类型， 做降级处理
-        $typeLowerArr = [ 'C'=>'O','O'=>'S','S'=>'B' ];
-        $type = isset($typeLowerArr[$pType]) ? $typeLowerArr[$pType] : 'C';
-        //父ID
-        $p_id = (int) $this->get('p_id');
+        $typeLowerArr = ['root'=>'C','C'=>'O','O'=>'S','S'=>'B' ];
+        $type = isset($typeLowerArr[$pType]) ? $typeLowerArr[$pType] : 'root';
         //数据量选项 small/middle/big
         $data_type = $this->get('data_type');
         if(!in_array($data_type,['small','middle','big'])){
             $data_type = 'small';
         }
-        //当前页数
-        $page = (int) $this->get('page');
-        if(!$page){
-            $page = $this->default_page;
-        }
-        //每页显示数
-        $page_size = (int) $this->get('page_size');
-        if(!$page_size){
-            $page_size = $this->default_page_size;
-        }
 
-        //获取总数
-        $this->handle_condition($type, $p_id, $data_type);
-        $total = $this->db->count_all_results();
+        if($type=='root'){
+            $result = [
+                [
+                    'id'    => 'root',
+                    'name' => '广告资源',
+                    'disabled' => true,
+                ]
+            ];
+//            $total = 1;
+//            $page = 1;
+        }else{
+            //父ID
+            $p_id = (int) $this->get('p_id');
+            //当前页数
+            $page = (int) $this->get('page');
+            if(!$page){
+                $page = $this->default_page;
+            }
+            //每页显示数
+            $page_size = (int) $this->get('page_size');
+            if(!$page_size){
+                $page_size = $this->default_page_size;
+            }
 
-        //获取分页数据
-        $this->handle_condition($type, $p_id, $data_type);
-        $this->db->limit($page_size, $page_size * ($page - 1));
+            //获取总数
+//            $this->handle_condition($type, $p_id, $data_type);
+//            $total = $this->db->count_all_results();
+
+            //获取分页数据
+            $this->handle_condition($type, $p_id, $data_type);
+            $this->db->limit($page_size, $page_size * ($page - 1));
 //        if($type!='B'){
 //            $tbl = $this->tablename_arr[$type];
 //            $tbl2 = $this->tablename_arr[$typeLowerArr[$type]];
 //            $this->db->join($tbl2, $tbl2.'.p_id = '.$tbl.'.id');
 //        }
-        $result = $this->db->get()->result_array();
+            $result = $this->db->get()->result_array();
 
 //        var_dump($this->db->last_query());
+        }
+
 
         //组装数据
         $list = [];
         foreach($result as $k=>$v){
-            $list[$k]['id'] = (int)$v['id'];
+            $list[$k]['id'] = $v['id'];
             $list[$k]['label'] = $v['name'];
             $list[$k]['type'] = $type;
+            if(isset($v['disabled'])){
+                $list[$k]['disabled'] = $v['disabled'];
+            }
             //创意类型增加叶节点标志
             if($type == 'B'){
                 $list[$k]['isLeaf'] = true;
             }else{
                 //非创意类型获取子节点总数和分页相关信息
                 $tbl2 = $this->tablename_arr[$typeLowerArr[$type]];
-                $this->db->where([$tbl2.'.p_id'=> (int) $v['id']]);
+                if($typeLowerArr[$type]!=='C'){
+                    $this->db->where([$tbl2.'.p_id'=> (int) $v['id']]);
+                }
                 $this->db->where([$tbl2.'.id <= '=>$this->num[$typeLowerArr[$type]]['end_id'][$data_type]]);
                 $this->db->from($tbl2);
                 $childrenCount = $this->db->count_all_results();
                 $list[$k]['total'] = $childrenCount;
 //                $list[$k]['isLeaf'] = $childrenCount == 0;
 //                $list[$k]['page_size'] = $page_size;
-//                $list[$k]['currentPage'] = 1;
+                $list[$k]['currentPage'] = 1;
 //                $list[$k]['pageTotal'] = 1;
-
-
-
 
             }
         }
 
-        $this->_data = ['total'=>$total, 'children'=>$list, /*'page_size'=>$page_size,*/ /*'currentPage'=>$page,*/ /*'pageTotal'=>ceil($total/$page_size)*/];
+//        $this->_data = [/*'total'=>$total,*/ 'children'=>$list, /*'page_size'=>$page_size,*/ /*'currentPage'=>$page,*/ /*'pageTotal'=>ceil($total/$page_size)*/];
+        
+        $this->_data = $list;
         $this->send_response();
     }
 
