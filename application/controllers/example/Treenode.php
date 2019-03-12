@@ -164,7 +164,7 @@ class Treenode extends MY_Controller {
                 $this->db->from($tbl2);
                 $childrenCount = $this->db->count_all_results();
                 $list[$k]['total'] = $childrenCount;
-//                $list[$k]['isLeaf'] = $childrenCount == 0;
+                $list[$k]['isLeaf'] = $childrenCount == 0;
 //                $list[$k]['page_size'] = $page_size;
                 $list[$k]['currentPage'] = 1;
 //                $list[$k]['pageTotal'] = 1;
@@ -173,7 +173,7 @@ class Treenode extends MY_Controller {
         }
 
 //        $this->_data = [/*'total'=>$total,*/ 'children'=>$list, /*'page_size'=>$page_size,*/ /*'currentPage'=>$page,*/ /*'pageTotal'=>ceil($total/$page_size)*/];
-        
+
         $this->_data = $list;
         $this->send_response();
     }
