@@ -99,6 +99,11 @@ class Treenode extends MY_Controller {
         if(!in_array($data_type,['small','middle','big'])){
             $data_type = 'small';
         }
+        //搜索词
+        $search_text = $this->get('search_text');
+
+        //叶节点资源类型
+        $leaf_type = $this->get('leaf_type');
 
         if($type=='root'){
             $result = [
@@ -113,6 +118,7 @@ class Treenode extends MY_Controller {
         }else{
             //父ID
             $p_id = (int) $this->get('p_id');
+            
             //当前页数
             $page = (int) $this->get('page');
             if(!$page){
@@ -129,7 +135,7 @@ class Treenode extends MY_Controller {
 //            $total = $this->db->count_all_results();
 
             //获取分页数据
-            $this->handle_condition($type, $p_id, $data_type);
+            $this->handle_condition($type, $p_id, $data_type, $search_text);
             $this->db->limit($page_size, $page_size * ($page - 1));
 //        if($type!='B'){
 //            $tbl = $this->tablename_arr[$type];
@@ -152,7 +158,7 @@ class Treenode extends MY_Controller {
                 $list[$k]['disabled'] = $v['disabled'];
             }
             //创意类型增加叶节点标志
-            if($type == 'B'){
+            if($type == 'B' || $leaf_type == $type){
                 $list[$k]['isLeaf'] = true;
             }else{
                 //非创意类型获取子节点总数和分页相关信息
@@ -161,6 +167,9 @@ class Treenode extends MY_Controller {
                     $this->db->where([$tbl2.'.p_id'=> (int) $v['id']]);
                 }
                 $this->db->where([$tbl2.'.id <= '=>$this->num[$typeLowerArr[$type]]['end_id'][$data_type]]);
+                if($search_text != ''){
+                  $this->db->like([$tbl2.'.name'=>$search_text]);
+                }
                 $this->db->from($tbl2);
                 $childrenCount = $this->db->count_all_results();
                 $list[$k]['total'] = $childrenCount;
@@ -178,14 +187,17 @@ class Treenode extends MY_Controller {
         $this->send_response();
     }
 
-    private function handle_condition($type, $p_id, $data_type){
+    private function handle_condition($type, $p_id, $data_type, $search_text){
         $tbl = $this->tablename_arr[$type];
         $this->db->select([$tbl.'.id', $tbl.'.name']);
         //根据数据量选项 选择数据范围
         $this->db->where([$tbl.'.id <= '=>$this->num[$type]['end_id'][$data_type]]);
         //不是活动类型需要加父ID
         if($type !== 'C'){
-            $this->db->where([$tbl.'.p_id'=>$p_id]);
+          $this->db->where([$tbl.'.p_id'=>$p_id]);
+        }
+        if($search_text != ''){
+          $this->db->like([$tbl.'.name'=>$search_text]);
         }
         $this->db->from($tbl);
     }
