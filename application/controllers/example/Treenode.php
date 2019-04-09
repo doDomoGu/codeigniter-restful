@@ -20,6 +20,26 @@ class Treenode extends MY_Controller {
         'B' => '_banner'
     ];
 
+    /*public $props = [
+        'id'            =>  'i',
+        'label'         =>  'l',
+        'type'          =>  't',
+        'total'         =>  'to',
+        'isLeaf'        =>  'il',
+        'currentPage'   =>  'c',
+        'disabled'      =>  'd'
+    ];*/
+
+    public $props = [
+        'id'            =>  'id',
+        'label'         =>  'label',
+        'type'          =>  'type',
+        'total'         =>  'total',
+        'isLeaf'        =>  'isLeaf',
+        'currentPage'   =>  'currentPage',
+        'disabled'      =>  'disabled'
+    ];
+
     public $num = [];
 
     public function __construct() {
@@ -151,15 +171,15 @@ class Treenode extends MY_Controller {
         //组装数据
         $list = [];
         foreach($result as $k=>$v){
-            $list[$k]['id'] = $v['id'];
-            $list[$k]['label'] = $v['name'];
-            $list[$k]['type'] = $type;
+            $list[$k][$this->props['id']] = $v['id'];
+            $list[$k][$this->props['label']] = $v['name'];
+            $list[$k][$this->props['type']] = $type;
             if(isset($v['disabled'])){
-                $list[$k]['disabled'] = $v['disabled'];
+                $list[$k][$this->props['disabled']] = $v['disabled'];
             }
             //创意类型增加叶节点标志
             if($type == 'B' || $leaf_type == $type){
-                $list[$k]['isLeaf'] = true;
+                $list[$k][$this->props['isLeaf']] = true;
             }else{
                 //非创意类型获取子节点总数和分页相关信息
                 $tbl2 = $this->tablename_arr[$typeLowerArr[$type]];
@@ -172,10 +192,10 @@ class Treenode extends MY_Controller {
                 }
                 $this->db->from($tbl2);
                 $childrenCount = $this->db->count_all_results();
-                $list[$k]['total'] = $childrenCount;
-                $list[$k]['isLeaf'] = $childrenCount == 0;
+                $list[$k][$this->props['total']] = $childrenCount;
+                $list[$k][$this->props['isLeaf']] = $childrenCount == 0;
 //                $list[$k]['page_size'] = $page_size;
-                $list[$k]['currentPage'] = 1;
+                $list[$k][$this->props['currentPage']] = 1;
 //                $list[$k]['pageTotal'] = 1;
 
             }
